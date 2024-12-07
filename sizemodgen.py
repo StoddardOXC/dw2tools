@@ -30,32 +30,34 @@ ArrayOfComponentDefinition
 
 """
 
-import sys, glob, os.path
-from lxml import etree, objectify
+import sys, glob, os, os.path
+from lxml import etree
 
-divider = 6.0
-weap_divider = 3.0
+from icon import icon_png
+
+divider = 12.0
+weap_divider = 6.0
 metafactors = {
     'fighter':              1.0,
     'civilian':             1.0/divider,
     'freighter':            1.0/divider,
     'navysmall':            1.0/divider,
-    'navycap':              2.0/divider,
-    'supercap':             3.0/divider,
-    'base':                 1.0,
+    'navycap':              1.0/divider,
+    'supercap':             1.0/divider,
+    'base':                 1.0/divider,
 }
 factors = {
     'FighterBomber':        'fighter',
     'FighterInterceptor':   'fighter',
 
-    'TroopTransport':       'civilian',
-    'FuelTanker':           'civilian',
-    'MiningShip':           'civilian',
-    'PassengerShip':        'civilian',    
     'ExplorationShip':      'civilian',
     'ConstructionShip':     'civilian',
+    'MiningShip':           'civilian',
+    'PassengerShip':        'civilian',
     'ColonyShip':           'civilian',
-    
+    'TroopTransport':       'civilian',
+    'FuelTanker':           'civilian',
+
     'FreighterSmall':       'freighter',
     'FreighterMedium':      'freighter',
     'FreighterLarge':       'freighter',
@@ -113,19 +115,29 @@ def resize_weaps(root, path):
         yc.text = "{:.2f}".format(y / weap_divider)
         #print(name, fam, cat, "{:.2f} {:.2f} -> {} {}".format(x,y, xc.text, yc.text))
 
-datadir = sys.argv[1]
-dstdir = sys.argv[2]
-
 modjs = """
-{
+{{
         "displayName": "resizemod",
-        "shortDescription": "ship/weap resize",
+        "shortDescription": "ship {:.2f} wpn {:.2f}",
+        "descriptionFile": "dsc.text",
         "previewImage": "rsz.png",
-        "version": "v0.1",
-}
-"""
+        "version": "0.1"
+}}
+""".format(divider, weap_divider)
 
-open(os.path.join(dstdir, "mod.json"), "wb").write(modjs.encode('utf-8'))
+descr = "    {:16s}: {:.3f}\n\n".format("weapons", 1.0/weap_divider)
+for k,v in metafactors.items():
+    descr += "    {:16s}: {:.3f}\n".format(k, v)
+
+datadir = sys.argv[1]
+destdir = sys.argv[2]
+
+if not os.path.isdir(destdir):
+    os.mkdir(destdir)
+
+open(os.path.join(destdir, "mod.json"), "wb").write(modjs.encode('utf-8'))
+open(os.path.join(destdir, "dsc.text"), "wb").write(descr.encode('utf-8'))
+open(os.path.join(destdir, "rsz.png"), "wb").write(icon_png)
 
 for fn in glob.glob(os.path.join(datadir, "*.xml")):
     dfn = os.path.basename(fn)
@@ -137,7 +149,7 @@ for fn in glob.glob(os.path.join(datadir, "*.xml")):
         resize_weaps(c, "ComponentDefinition/WeaponEffect/BodyScaling")
     else:
         continue
-    open(os.path.join(dstdir, dfn), "wb").write(etree.tostring(c, encoding="utf-8", xml_declaration=True))
+    open(os.path.join(destdir, dfn), "wb").write(etree.tostring(c, encoding="utf-8", xml_declaration=True))
 
 print("Roles", roles)
 print("Cats", cats)
